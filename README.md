@@ -1,2 +1,0 @@
-# NeuralNinjas
-UAIS-SillyconValley
