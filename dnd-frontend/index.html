@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Campaign Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎲 D&D Campaign Generator</h1>
+            <p class="subtitle">Upload images to create and evolve your campaign</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Browse Campaigns Section -->
+            <section class="browse-section" id="browseSection">
+                <div class="section-header">
+                    <h2>📚 Your Campaigns</h2>
+                    <button id="toggleBrowseBtn" class="btn-secondary">Show Campaigns</button>
+                </div>
+                <div id="campaignsList" class="campaigns-list" style="display: none;">
+                    <p class="loading-text">Loading campaigns...</p>
+                </div>
+            </section>
+
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-box" id="uploadBox">
+                    <div class="upload-icon">📸</div>
+                    <p class="upload-text">Drag & drop an image here</p>
+                    <p class="upload-subtext">or click to browse</p>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+
+                <div class="upload-options">
+                    <input
+                        type="text"
+                        id="imageDescription"
+                        placeholder="Optional: Describe the image context..."
+                        class="description-input"
+                    >
+
+                    <div class="campaign-selector">
+                        <label>
+                            <input type="radio" name="campaignMode" value="new" checked>
+                            Create new campaign
+                        </label>
+                        <label>
+                            <input type="radio" name="campaignMode" value="update">
+                            Update campaign:
+                        </label>
+                        <select id="campaignSelect" disabled>
+                            <option value="">Select a campaign...</option>
+                        </select>
+                    </div>
+
+                    <button id="uploadBtn" class="btn-primary" disabled>Generate Campaign</button>
+                </div>
+
+                <div id="loadingIndicator" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Analyzing image and generating campaign...</p>
+                </div>
+            </section>
+
+            <!-- Campaign Display Section -->
+            <section class="campaign-section" id="campaignSection" style="display: none;">
+                <div class="campaign-header">
+                    <h2 id="campaignTitle">Campaign Title</h2>
+                    <span class="campaign-id" id="campaignId"></span>
+                </div>
+
+                <div class="campaign-content">
+                    <!-- Setting & Story Hook -->
+                    <div class="campaign-card">
+                        <h3>⚔️ Setting</h3>
+                        <p id="campaignSetting"></p>
+                    </div>
+
+                    <div class="campaign-card">
+                        <h3>📜 Story Hook</h3>
+                        <p id="campaignStoryHook"></p>
+                    </div>
+
+                    <!-- NPCs -->
+                    <div class="campaign-card">
+                        <h3>👥 NPCs</h3>
+                        <div id="campaignNPCs"></div>
+                    </div>
+
+                    <!-- Locations -->
+                    <div class="campaign-card">
+                        <h3>🏰 Locations</h3>
+                        <div id="campaignLocations"></div>
+                    </div>
+
+                    <!-- Initial Quest -->
+                    <div class="campaign-card">
+                        <h3>🎯 Current Quest</h3>
+                        <p id="campaignQuest"></p>
+                    </div>
+
+                    <!-- Encounters -->
+                    <div class="campaign-card">
+                        <h3>⚡ Encounters</h3>
+                        <div id="campaignEncounters"></div>
+                    </div>
+
+                    <!-- Updates History -->
+                    <div class="campaign-card" id="updatesCard" style="display: none;">
+                        <h3>📖 Campaign Updates</h3>
+                        <div id="campaignUpdates"></div>
+                    </div>
+
+                    <!-- Detected Objects -->
+                    <div class="campaign-card">
+                        <h3>🔍 Detected Objects</h3>
+                        <div id="detectedObjects"></div>
+                    </div>
+
+                    <!-- Images History -->
+                    <div class="campaign-card" id="imagesCard" style="display: none;">
+                        <h3>📷 Images Uploaded</h3>
+                        <div id="campaignImages"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
