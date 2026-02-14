@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Batman!</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🦇 Find Batman! 🦇</h1>
+
+    <!-- Step 1: Upload Image -->
+    <div id="uploadStep" class="step active">
+      <p>Upload an image to begin!</p>
+      <div class="upload-section">
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+          <p>📁 Click to upload an image</p>
+          <p style="font-size: 14px; color: #aaa;">or drag and drop</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+    </div>
+
+    <!-- Step 2: Play Game -->
+    <div id="gameStep" class="step">
+      <p>Click on Batman when you spot him!</p>
+      <div class="message" id="message"></div>
+      <div class="stats" id="stats">
+        <p>Attempts: <span id="attempts">0</span></p>
+      </div>
+      <div class="game-container" id="gameContainer">
+        <img id="gameImage" class="game-image" alt="Find Batman">
+      </div>
+      <div>
+        <button class="btn" id="playAgainBtn" style="display: none;" onclick="playAgain()">Play Again</button>
+        <button class="btn" onclick="resetGame()">Upload New Image</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
