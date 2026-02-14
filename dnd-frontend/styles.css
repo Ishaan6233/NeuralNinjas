@@ -39,6 +39,111 @@ header h1 {
     gap: 30px;
 }
 
+/* Browse Section */
+.browse-section {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h2 {
+    color: #667eea;
+    font-size: 1.8rem;
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    background: white;
+    color: #667eea;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+    background: #667eea;
+    color: white;
+}
+
+.campaigns-list {
+    display: grid;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.campaign-item {
+    background: #f8f9ff;
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.campaign-item:hover {
+    background: #f0f2ff;
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.campaign-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 10px;
+}
+
+.campaign-item-title {
+    font-size: 1.3rem;
+    color: #667eea;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.campaign-item-id {
+    font-size: 0.85rem;
+    color: #999;
+    font-family: monospace;
+}
+
+.campaign-item-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 10px;
+}
+
+.campaign-item-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.campaign-item-setting {
+    color: #666;
+    font-size: 0.95rem;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+.loading-text {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+
 /* Upload Section */
 .upload-section {
     background: white;

@@ -3,8 +3,9 @@ Campaign state management - save/load campaigns as JSON files.
 """
 import json
 import os
+import re
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from datetime import datetime
 
 
@@ -21,6 +22,14 @@ class CampaignManager:
         self.campaigns_dir = Path(campaigns_dir)
         self.campaigns_dir.mkdir(exist_ok=True)
 
+    def _slugify(self, text: str) -> str:
+        """Convert text to URL-friendly slug."""
+        text = text.lower()
+        text = re.sub(r'[^\w\s-]', '', text)
+        text = re.sub(r'[\s_-]+', '-', text)
+        text = re.sub(r'^-+|-+$', '', text)
+        return text[:50]  # Limit length
+
     def create_campaign(self, campaign_data: Dict, campaign_id: Optional[str] = None) -> str:
         """
         Create and save a new campaign.
@@ -33,7 +42,11 @@ class CampaignManager:
             Campaign ID
         """
         if not campaign_id:
-            campaign_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Generate descriptive ID from title
+            title = campaign_data.get("title", "Untitled Campaign")
+            slug = self._slugify(title)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            campaign_id = f"{slug}_{timestamp}"
 
         campaign_data["id"] = campaign_id
         campaign_data["created_at"] = datetime.now().isoformat()
@@ -104,6 +117,35 @@ class CampaignManager:
         for file in self.campaigns_dir.glob("*.json"):
             campaigns.append(file.stem)
         return sorted(campaigns, reverse=True)
+
+    def list_campaigns_with_details(self) -> List[Dict]:
+        """
+        List all campaigns with their title and metadata.
+
+        Returns:
+            List of campaign summaries (id, title, created_at, updated_at, images_count, updates_count)
+        """
+        summaries = []
+        for file in self.campaigns_dir.glob("*.json"):
+            try:
+                with open(file, 'r', encoding='utf-8') as f:
+                    campaign = json.load(f)
+                    summaries.append({
+                        "id": campaign.get("id", file.stem),
+                        "title": campaign.get("title", "Untitled Campaign"),
+                        "setting": campaign.get("setting", "")[:100] + "..." if len(campaign.get("setting", "")) > 100 else campaign.get("setting", ""),
+                        "created_at": campaign.get("created_at", ""),
+                        "updated_at": campaign.get("updated_at", ""),
+                        "images_count": len(campaign.get("images", [])),
+                        "updates_count": len(campaign.get("updates", []))
+                    })
+            except Exception as e:
+                print(f"Error loading campaign {file}: {e}")
+                continue
+
+        # Sort by updated_at (most recent first)
+        summaries.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
+        return summaries
 
     def add_image_to_campaign(self, campaign_id: str, image_path: str, objects: Dict[str, int]) -> bool:
         """

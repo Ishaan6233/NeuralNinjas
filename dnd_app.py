@@ -138,9 +138,9 @@ def upload_image():
 
 @app.route('/api/campaigns', methods=['GET'])
 def list_campaigns():
-    """List all campaigns."""
+    """List all campaigns with details."""
     try:
-        campaigns = campaign_manager.list_campaigns()
+        campaigns = campaign_manager.list_campaigns_with_details()
         return jsonify({"campaigns": campaigns})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

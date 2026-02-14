@@ -2,6 +2,7 @@
 
 let selectedFile = null;
 let currentCampaignId = null;
+let allCampaigns = [];
 
 // DOM Elements
 const uploadBox = document.getElementById('uploadBox');
@@ -11,6 +12,8 @@ const loadingIndicator = document.getElementById('loadingIndicator');
 const campaignSection = document.getElementById('campaignSection');
 const imageDescription = document.getElementById('imageDescription');
 const campaignSelect = document.getElementById('campaignSelect');
+const toggleBrowseBtn = document.getElementById('toggleBrowseBtn');
+const campaignsList = document.getElementById('campaignsList');
 
 // Campaign mode radio buttons
 const campaignModeRadios = document.querySelectorAll('input[name="campaignMode"]');
@@ -55,6 +58,22 @@ function setupEventListeners() {
             campaignSelect.disabled = e.target.value === 'new';
         });
     });
+
+    // Toggle browse campaigns
+    toggleBrowseBtn.addEventListener('click', toggleBrowseCampaigns);
+}
+
+function toggleBrowseCampaigns() {
+    const isHidden = campaignsList.style.display === 'none';
+
+    if (isHidden) {
+        campaignsList.style.display = 'block';
+        toggleBrowseBtn.textContent = 'Hide Campaigns';
+        displayCampaignsList();
+    } else {
+        campaignsList.style.display = 'none';
+        toggleBrowseBtn.textContent = 'Show Campaigns';
+    }
 }
 
 function handleFileSelect(file) {
@@ -75,16 +94,90 @@ async function loadCampaignsList() {
         const response = await fetch('/api/campaigns');
         const data = await response.json();
 
+        allCampaigns = data.campaigns;
+
         campaignSelect.innerHTML = '<option value="">Select a campaign...</option>';
 
-        data.campaigns.forEach(campaignId => {
+        data.campaigns.forEach(campaign => {
             const option = document.createElement('option');
-            option.value = campaignId;
-            option.textContent = campaignId;
+            option.value = campaign.id;
+            option.textContent = campaign.title;
             campaignSelect.appendChild(option);
         });
     } catch (error) {
         console.error('Error loading campaigns:', error);
+    }
+}
+
+async function displayCampaignsList() {
+    campaignsList.innerHTML = '<p class="loading-text">Loading campaigns...</p>';
+
+    try {
+        const response = await fetch('/api/campaigns');
+        const data = await response.json();
+
+        allCampaigns = data.campaigns;
+
+        if (allCampaigns.length === 0) {
+            campaignsList.innerHTML = '<p class="loading-text">No campaigns yet. Upload an image to create your first campaign!</p>';
+            return;
+        }
+
+        campaignsList.innerHTML = '';
+
+        allCampaigns.forEach(campaign => {
+            const campaignDiv = document.createElement('div');
+            campaignDiv.className = 'campaign-item';
+            campaignDiv.onclick = () => viewCampaign(campaign.id);
+
+            const createdDate = new Date(campaign.created_at).toLocaleDateString();
+            const updatedDate = new Date(campaign.updated_at).toLocaleDateString();
+
+            campaignDiv.innerHTML = `
+                <div class="campaign-item-header">
+                    <div>
+                        <div class="campaign-item-title">${campaign.title}</div>
+                        <div class="campaign-item-id">${campaign.id}</div>
+                    </div>
+                </div>
+                <div class="campaign-item-setting">${campaign.setting}</div>
+                <div class="campaign-item-meta">
+                    <span>📅 Created: ${createdDate}</span>
+                    <span>🔄 Updated: ${updatedDate}</span>
+                    <span>📷 ${campaign.images_count} image(s)</span>
+                    <span>📖 ${campaign.updates_count} update(s)</span>
+                </div>
+            `;
+
+            campaignsList.appendChild(campaignDiv);
+        });
+    } catch (error) {
+        console.error('Error displaying campaigns:', error);
+        campaignsList.innerHTML = '<p class="loading-text">Error loading campaigns</p>';
+    }
+}
+
+async function viewCampaign(campaignId) {
+    try {
+        const response = await fetch(`/api/campaigns/${campaignId}`);
+        const data = await response.json();
+
+        if (data.campaign) {
+            currentCampaignId = campaignId;
+
+            // Get the latest objects from the most recent image
+            const latestObjects = data.campaign.images && data.campaign.images.length > 0
+                ? data.campaign.images[data.campaign.images.length - 1].objects
+                : {};
+
+            displayCampaign(data.campaign, latestObjects, false);
+
+            // Scroll to campaign view
+            campaignSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    } catch (error) {
+        console.error('Error viewing campaign:', error);
+        alert('Failed to load campaign');
     }
 }
 
@@ -230,4 +323,29 @@ function displayCampaign(campaign, objects, isUpdate) {
     });
 
     objectsContainer.appendChild(objectTags);
+
+    // Images History
+    if (campaign.images && campaign.images.length > 0) {
+        const imagesCard = document.getElementById('imagesCard');
+        imagesCard.style.display = 'block';
+
+        const imagesContainer = document.getElementById('campaignImages');
+        imagesContainer.innerHTML = '';
+
+        campaign.images.forEach((image, index) => {
+            const imageDiv = document.createElement('div');
+            imageDiv.className = 'update-item';
+
+            const uploadedDate = new Date(image.uploaded_at).toLocaleString();
+            const objectsList = Object.entries(image.objects)
+                .map(([obj, count]) => `${obj} (${count})`)
+                .join(', ');
+
+            imageDiv.innerHTML = `
+                <p><strong>Image ${index + 1}:</strong> Uploaded ${uploadedDate}</p>
+                <p>Objects: ${objectsList}</p>
+            `;
+            imagesContainer.appendChild(imageDiv);
+        });
+    }
 }

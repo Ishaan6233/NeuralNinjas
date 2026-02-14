@@ -14,6 +14,17 @@
         </header>
 
         <div class="main-content">
+            <!-- Browse Campaigns Section -->
+            <section class="browse-section" id="browseSection">
+                <div class="section-header">
+                    <h2>📚 Your Campaigns</h2>
+                    <button id="toggleBrowseBtn" class="btn-secondary">Show Campaigns</button>
+                </div>
+                <div id="campaignsList" class="campaigns-list" style="display: none;">
+                    <p class="loading-text">Loading campaigns...</p>
+                </div>
+            </section>
+
             <!-- Upload Section -->
             <section class="upload-section">
                 <div class="upload-box" id="uploadBox">
@@ -107,6 +118,12 @@
                     <div class="campaign-card">
                         <h3>🔍 Detected Objects</h3>
                         <div id="detectedObjects"></div>
+                    </div>
+
+                    <!-- Images History -->
+                    <div class="campaign-card" id="imagesCard" style="display: none;">
+                        <h3>📷 Images Uploaded</h3>
+                        <div id="campaignImages"></div>
                     </div>
                 </div>
             </section>
