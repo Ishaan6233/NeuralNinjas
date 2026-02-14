@@ -1,15 +1,21 @@
-"""For melrita"""
-# detect.py
 from functools import lru_cache
 from typing import List, Dict, Tuple, Union
 import cv2
 import numpy as np
-from ultralytics import YOLO
+
+try:
+    from ultralytics import YOLO
+except ImportError:  # pragma: no cover
+    YOLO = None
 
 ImageLike = Union[str, np.ndarray]
 
 @lru_cache(maxsize=1)
-def _load_model(weights: str) -> YOLO:
+def _load_model(weights: str):
+    if YOLO is None:
+        raise ImportError(
+            "ultralytics is not installed. Run: python -m pip install ultralytics"
+        )
     return YOLO(weights)
 
 def _to_image_array(image: ImageLike) -> np.ndarray:

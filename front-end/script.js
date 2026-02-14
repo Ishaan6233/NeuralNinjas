@@ -1,5 +1,6 @@
 let gameActive = false;
 let attempts = 0;
+let processing = false;
 
 const fileInput = document.getElementById('fileInput');
 const uploadStep = document.getElementById('uploadStep');
@@ -9,27 +10,21 @@ const gameContainer = document.getElementById('gameContainer');
 const message = document.getElementById('message');
 const attemptsDisplay = document.getElementById('attempts');
 const playAgainBtn = document.getElementById('playAgainBtn');
+const giveUpBtn = document.getElementById('giveUpBtn');
 
-// *** IMPORTANT: Change this to your actual game image path ***
-const GAME_IMAGE_PATH = 'images/batman-game.jpg';  // Replace with your image filename
-
-// Batman's location - adjust these coordinates based on your image
 const batmanLocation = {
-  x: 0.5,      // 50% from left (0.0 to 1.0)
-  y: 0.5,      // 50% from top (0.0 to 1.0)
-  radius: 50   // Detection radius in pixels
+  x: 0.5,
+  y: 0.5,
+  radius: 50
 };
 
-// Handle file upload
 fileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file && file.type.startsWith('image/')) {
-    // User uploaded an image, now show the game image
-    startGame();
+    processUploadedImage(file);
   }
 });
 
-// Drag and drop
 const uploadArea = document.querySelector('.upload-area');
 uploadArea.addEventListener('dragover', (e) => {
   e.preventDefault();
@@ -45,21 +40,61 @@ uploadArea.addEventListener('drop', (e) => {
   uploadArea.style.backgroundColor = '';
   const file = e.dataTransfer.files[0];
   if (file && file.type.startsWith('image/')) {
-    // User uploaded an image, now show the game image
-    startGame();
+    processUploadedImage(file);
   }
 });
 
-// Start the game
-function startGame() {
-  gameImage.src = GAME_IMAGE_PATH;
+function startGame(imagePath) {
+  gameImage.src = imagePath;
   showStep('game');
   gameActive = true;
   attempts = 0;
   attemptsDisplay.textContent = attempts;
+  message.textContent = '';
+  message.className = 'message';
+  giveUpBtn.style.display = 'inline-block';
 }
 
-// Game click handler
+async function processUploadedImage(file) {
+  if (processing) return;
+  processing = true;
+  message.textContent = 'Processing image with YOLO segmentation...';
+  message.className = 'message';
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  try {
+    const res = await fetch('/api/process', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to process image');
+    }
+
+    batmanLocation.x = data.batman.x_norm;
+    batmanLocation.y = data.batman.y_norm;
+    batmanLocation.radius = data.batman.radius || 42;
+    startGame(`${data.output_image_url}?t=${Date.now()}`);
+    const vis = data.reason?.sprite?.visible_ratio;
+    const sal = data.reason?.sprite?.low_saliency_score;
+    const bestObj = data.best_object || 'none';
+    if (vis !== undefined && sal !== undefined) {
+      message.textContent = `Detected ${data.objects_detected} objects. Best occluder: ${bestObj}. Visible fragment ${(vis * 100).toFixed(0)}%, low-saliency ${(sal * 100).toFixed(0)}%. Find Batman!`;
+    } else {
+      message.textContent = `Detected ${data.objects_detected} objects. Best occluder: ${bestObj}. Find Batman!`;
+    }
+    message.className = 'message';
+  } catch (err) {
+    message.textContent = `Error: ${err.message}`;
+    message.className = 'message try-again';
+  } finally {
+    processing = false;
+  }
+}
+
 gameImage.addEventListener('click', (e) => {
   if (!gameActive) return;
 
@@ -70,44 +105,48 @@ gameImage.addEventListener('click', (e) => {
   const clickX = e.clientX - rect.left;
   const clickY = e.clientY - rect.top;
 
-  // Convert stored percentage to pixels
   const batmanX = batmanLocation.x * gameImage.width;
   const batmanY = batmanLocation.y * gameImage.height;
 
-  // Calculate distance
   const distance = Math.sqrt(
-    Math.pow(clickX - batmanX, 2) + 
+    Math.pow(clickX - batmanX, 2) +
     Math.pow(clickY - batmanY, 2)
   );
 
-  // Create marker
   const marker = document.createElement('div');
   marker.className = 'click-marker';
   marker.style.left = clickX + 'px';
   marker.style.top = clickY + 'px';
 
   if (distance <= batmanLocation.radius) {
-    // Success!
     marker.classList.add('success-marker');
     gameContainer.appendChild(marker);
-    message.textContent = `🦇 You found Batman in ${attempts} attempt${attempts !== 1 ? 's' : ''}!`;
+    message.textContent = `You found Batman in ${attempts} attempt${attempts !== 1 ? 's' : ''}!`;
     message.className = 'message success';
     gameActive = false;
     playAgainBtn.style.display = 'inline-block';
+    giveUpBtn.style.display = 'none';
   } else {
-    // Try again
     gameContainer.appendChild(marker);
     message.textContent = 'Not quite! Keep looking...';
     message.className = 'message try-again';
-    
-    // Remove marker after 1 second
+
     setTimeout(() => {
       marker.remove();
     }, 1000);
   }
 });
 
-// Helper functions
+function revealBatmanMarker() {
+  const revealX = batmanLocation.x * gameImage.width;
+  const revealY = batmanLocation.y * gameImage.height;
+  const marker = document.createElement('div');
+  marker.className = 'click-marker success-marker';
+  marker.style.left = revealX + 'px';
+  marker.style.top = revealY + 'px';
+  gameContainer.appendChild(marker);
+}
+
 function showStep(step) {
   uploadStep.classList.remove('active');
   gameStep.classList.remove('active');
@@ -116,28 +155,40 @@ function showStep(step) {
   if (step === 'game') gameStep.classList.add('active');
 }
 
+function giveUp() {
+  if (!gameActive) return;
+  gameActive = false;
+  revealBatmanMarker();
+  message.textContent = 'Batman revealed. Try again!';
+  message.className = 'message try-again';
+  playAgainBtn.style.display = 'inline-block';
+  giveUpBtn.style.display = 'none';
+}
+
 function playAgain() {
-  // Clear markers
   const markers = gameContainer.querySelectorAll('.click-marker');
-  markers.forEach(m => m.remove());
-  
-  // Reset game state
+  markers.forEach((m) => m.remove());
+
   gameActive = true;
   attempts = 0;
   attemptsDisplay.textContent = attempts;
   message.textContent = '';
+  message.className = 'message';
   playAgainBtn.style.display = 'none';
+  giveUpBtn.style.display = 'inline-block';
 }
 
 function resetGame() {
   gameActive = false;
   attempts = 0;
   message.textContent = '';
+  message.className = 'message';
   playAgainBtn.style.display = 'none';
+  giveUpBtn.style.display = 'none';
   fileInput.value = '';
 
   const markers = gameContainer.querySelectorAll('.click-marker');
-  markers.forEach(m => m.remove());
+  markers.forEach((m) => m.remove());
 
   showStep('upload');
 }

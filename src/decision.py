@@ -15,8 +15,49 @@ def _safe_mean(region: np.ndarray) -> float:
     return float(np.mean(region)) if region.size > 0 else 0.0
 
 
+def _object_mask_potential(obj: dict, img_h: int, img_w: int) -> float:
+    mask = obj.get("mask")
+    if not isinstance(mask, np.ndarray) or mask.shape[:2] != (img_h, img_w):
+        return 0.0
+    x1, y1, x2, y2 = obj["box"]
+    crop = mask[y1:y2, x1:x2]
+    if crop.size == 0:
+        return 0.0
+    mask_u8 = (crop.astype(np.uint8) * 255)
+    edge = cv2.Canny(mask_u8, 64, 128)
+    edge_density = float(np.count_nonzero(edge)) / float(edge.size)
+    fill_ratio = float(np.count_nonzero(crop)) / float(crop.size)
+    # Best hiding occluders are irregular edges with moderate fill.
+    fill_score = 1.0 - min(abs(fill_ratio - 0.55) / 0.55, 1.0)
+    return 0.7 * edge_density + 0.3 * fill_score
+
+
+def _compute_saliency_map(image: np.ndarray) -> np.ndarray:
+    img_h, img_w = image.shape[:2]
+    try:
+        saliency = cv2.saliency.StaticSaliencySpectralResidual_create()
+        success, saliency_map = saliency.computeSaliency(image)
+        if success and saliency_map is not None:
+            return (saliency_map * 255).astype(np.uint8)
+    except AttributeError:
+        pass
+
+    # Fallback when cv2.saliency is unavailable (opencv-python without contrib).
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    grad_x = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    mag = cv2.magnitude(grad_x, grad_y)
+    saliency_map = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
+    return saliency_map.astype(np.uint8) if saliency_map is not None else np.zeros((img_h, img_w), dtype=np.uint8)
+
+
 def decide_hiding_spot(
-    image: np.ndarray, objects: list, batman_size: tuple, depth_map: np.ndarray | None = None
+    image: np.ndarray,
+    objects: list,
+    batman_size: tuple,
+    depth_map: np.ndarray | None = None,
+    return_debug: bool = False,
 ):
     """
     image: full input image as a numpy array
@@ -32,13 +73,7 @@ def decide_hiding_spot(
     img_h, img_w = image.shape[:2]
     batman_w, batman_h = batman_size
 
-    saliency = cv2.saliency.StaticSaliencySpectralResidual_create()
-    success, saliency_map = saliency.computeSaliency(image)
-
-    if not success or saliency_map is None:
-        saliency_map = np.zeros((img_h, img_w), dtype=np.uint8)
-    else:
-        saliency_map = (saliency_map * 255).astype(np.uint8)
+    saliency_map = _compute_saliency_map(image)
 
     image_area = float(img_w * img_h)
     depth_norm = None
@@ -50,6 +85,7 @@ def decide_hiding_spot(
     best_score = float("-inf")
     best_object = None
     best_location = (0, 0)
+    best_debug = {}
 
     for obj in objects:
         x1, y1, x2, y2 = obj["box"]
@@ -69,6 +105,7 @@ def decide_hiding_spot(
         region = saliency_map[y1:y2, x1:x2]
         mean_saliency = _safe_mean(region)
         low_saliency_score = 1.0 - (mean_saliency / 255.0)
+        mask_potential = _object_mask_potential(obj, img_h, img_w)
 
         occlusion_score = 0.0
         if depth_norm is not None:
@@ -87,7 +124,12 @@ def decide_hiding_spot(
             outside_mean = float(np.mean(outside_vals)) if outside_vals.size > 0 else inside_mean
             occlusion_score = float(np.clip(outside_mean - inside_mean, 0.0, 1.0))
 
-        combined_score = area_score + low_saliency_score + 0.8 * occlusion_score
+        combined_score = (
+            (0.35 * area_score)
+            + (1.25 * low_saliency_score)
+            + (1.1 * occlusion_score)
+            + (1.1 * mask_potential)
+        )
 
         if combined_score > best_score:
             best_score = combined_score
@@ -133,5 +175,14 @@ def decide_hiding_spot(
                 best_location = (hide_x, hide_y)
             else:
                 best_location = (0, 0)
+            best_debug = {
+                "area_score": area_score,
+                "low_saliency_score": low_saliency_score,
+                "occlusion_score": occlusion_score,
+                "mask_potential": mask_potential,
+                "combined_score": combined_score,
+            }
 
+    if return_debug:
+        return best_object, best_location, best_debug
     return best_object, best_location
