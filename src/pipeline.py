@@ -6,12 +6,7 @@ import numpy as np
 from src.compose import choose_best_batman_sprite, overlay_sprite
 from src.decision import decide_hiding_spot
 from src.detect import detect_objects
-
-
-def pseudo_depth(frame: np.ndarray) -> np.ndarray:
-    h, w = frame.shape[:2]
-    y = np.linspace(0.0, 1.0, h, dtype=np.float32).reshape(h, 1)
-    return np.repeat(y, w, axis=1)
+from src.depth import estimate_depth_map
 
 
 def run_pipeline_on_image(
@@ -20,7 +15,10 @@ def run_pipeline_on_image(
     model_path: str = "yolov8n-seg.pt",
     conf: float = 0.25,
     batman_size: tuple[int, int] = (72, 92),
+    use_midas: bool = True,
+    random_jitter: float = 0.25,
 ) -> dict:
+    """Core pipeline: YOLO -> hide spot -> sprite overlay. Depth optional."""
     objects = detect_objects(frame, model_path=model_path, conf=conf)
     if not objects:
         return {
@@ -33,13 +31,24 @@ def run_pipeline_on_image(
             "reason": None,
         }
 
-    depth_map = pseudo_depth(frame)
+    depth_map = None
+    if use_midas:
+        try:
+            depth_map = estimate_depth_map(frame)
+        except Exception:
+            depth_map = None
+
+    # Fresh RNG per call to encourage different placements across runs.
+    rng = np.random.default_rng()
+
     best_object, hide_xy, hide_debug = decide_hiding_spot(
         image=frame,
         objects=objects,
         batman_size=batman_size,
         depth_map=depth_map,
         return_debug=True,
+        random_jitter=random_jitter,
+        rng=rng,
     )
     sprite_choice = choose_best_batman_sprite(
         image=frame,

@@ -3,6 +3,7 @@ let attempts = 0;
 let processing = false;
 
 const fileInput = document.getElementById('fileInput');
+const loadingOverlay = document.getElementById('loadingOverlay');
 const uploadStep = document.getElementById('uploadStep');
 const gameStep = document.getElementById('gameStep');
 const gameImage = document.getElementById('gameImage');
@@ -65,6 +66,7 @@ async function processUploadedImage(file) {
   formData.append('image', file);
 
   try {
+    showLoading(true, 'Processing image with YOLO + depth…');
     const res = await fetch('/api/process', {
       method: 'POST',
       body: formData
@@ -91,6 +93,7 @@ async function processUploadedImage(file) {
     message.textContent = `Error: ${err.message}`;
     message.className = 'message try-again';
   } finally {
+    showLoading(false);
     processing = false;
   }
 }
@@ -191,4 +194,15 @@ function resetGame() {
   markers.forEach((m) => m.remove());
 
   showStep('upload');
+}
+
+function showLoading(state, text = 'Processing…') {
+  if (!loadingOverlay) return;
+  loadingOverlay.style.display = state ? 'flex' : 'none';
+  if (state) {
+    loadingOverlay.querySelector('p').textContent = text;
+  }
+  // Disable buttons while loading
+  const buttons = document.querySelectorAll('button');
+  buttons.forEach((btn) => { btn.disabled = state; });
 }
