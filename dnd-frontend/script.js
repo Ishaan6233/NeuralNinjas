@@ -125,10 +125,13 @@ async function displayCampaignsList() {
 
         campaignsList.innerHTML = '';
 
-        allCampaigns.forEach(campaign => {
+        allCampaigns.forEach((campaign, index) => {
             const campaignDiv = document.createElement('div');
             campaignDiv.className = 'campaign-item';
             campaignDiv.onclick = () => viewCampaign(campaign.id);
+
+            // Staggered animation
+            campaignDiv.style.animation = `slideInLeft 0.6s ease-out ${index * 0.1}s backwards`;
 
             const createdDate = new Date(campaign.created_at).toLocaleDateString();
             const updatedDate = new Date(campaign.updated_at).toLocaleDateString();
