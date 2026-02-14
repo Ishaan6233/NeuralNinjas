@@ -341,9 +341,12 @@ function displayCampaign(campaign, objects, isUpdate) {
                 .map(([obj, count]) => `${obj} (${count})`)
                 .join(', ');
 
+            const filename = image.filename || image.path || 'Unknown';
+
             imageDiv.innerHTML = `
-                <p><strong>Image ${index + 1}:</strong> Uploaded ${uploadedDate}</p>
-                <p>Objects: ${objectsList}</p>
+                <p><strong>Image ${index + 1}:</strong> ${filename}</p>
+                <p><em>Uploaded: ${uploadedDate}</em></p>
+                <p>Objects detected: ${objectsList}</p>
             `;
             imagesContainer.appendChild(imageDiv);
         });

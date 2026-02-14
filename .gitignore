@@ -9,28 +9,51 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.log
 
 # Virtual environments
 venv/
 env/
 ENV/
+.venv/
 
-# Uploads and campaigns
+# Uploads (images are deleted after processing anyway)
 uploads/
+
+# Campaigns (optional - comment out if you want to commit campaigns)
 campaigns/
 
 # Environment variables
 .env
+.env.local
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
 
-# YOLO models (large files)
-#*.pt
+# YOLO models (large files - will auto-download)
+*.pt
+yolov8*.pt
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Project specific
+*.jsonl
+.claude/

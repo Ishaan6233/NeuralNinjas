@@ -57,10 +57,12 @@ export GROQ_API_KEY="your-api-key-here"
 ### 1. Start the Server
 
 ```bash
-python dnd_app.py
+python main.py
 ```
 
 The server will start at `http://localhost:5001`
+
+**Note**: `main.py` checks for GROQ_API_KEY and provides helpful error messages if not set.
 
 ### 2. Open the Web Interface
 
@@ -85,17 +87,18 @@ The AI will weave new objects into your existing story!
 ## Project Structure
 
 ```
+├── main.py                    # Main entry point (run this!)
+├── dnd_app.py                 # Flask API server
 ├── src/
 │   ├── detect_objects.py       # YOLOv8 object detection
 │   ├── campaign_generator.py   # Groq LLM integration
 │   └── campaign_manager.py     # Campaign persistence
 ├── dnd-frontend/
-│   ├── index.html              # Main UI
+│   ├── index.html              # Main UI with campaign browser
 │   ├── styles.css              # Styling
 │   └── script.js               # Frontend logic
 ├── campaigns/                  # Saved campaigns (JSON)
-├── uploads/                    # Uploaded images
-├── dnd_app.py                 # Flask API server
+├── uploads/                    # Temporary uploads (auto-deleted)
 └── dnd_requirements.txt       # Python dependencies
 ```
 
@@ -132,7 +135,8 @@ Get specific campaign data
 3. **Object Summary**: Creates count of detected objects
 4. **LLM Generation**: Groq API (Llama 3.3 70B) generates campaign
 5. **Storage**: Campaign saved as JSON with metadata
-6. **Display**: Rich campaign rendered in UI
+6. **Auto-Cleanup**: Uploaded image is automatically deleted after processing (saves space)
+7. **Display**: Rich campaign rendered in UI
 
 ## Example Campaign Flow
 

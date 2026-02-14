@@ -95,40 +95,58 @@ def upload_image():
         generator = get_generator()
 
         # Create new campaign or update existing
-        if campaign_id and campaign_manager.campaign_exists(campaign_id):
-            # Update existing campaign
-            print(f"[UPLOAD] Updating campaign {campaign_id}")
+        try:
+            if campaign_id and campaign_manager.campaign_exists(campaign_id):
+                # Update existing campaign
+                print(f"[UPLOAD] Updating campaign {campaign_id}")
 
-            existing_campaign = campaign_manager.get_campaign(campaign_id)
-            updated_campaign = generator.update_campaign(
-                existing_campaign,
-                object_summary,
-                description
-            )
+                existing_campaign = campaign_manager.get_campaign(campaign_id)
+                updated_campaign = generator.update_campaign(
+                    existing_campaign,
+                    object_summary,
+                    description
+                )
 
-            campaign_manager.update_campaign(campaign_id, updated_campaign)
-            campaign_manager.add_image_to_campaign(campaign_id, str(filepath), object_summary)
+                campaign_manager.update_campaign(campaign_id, updated_campaign)
+                campaign_manager.add_image_to_campaign(campaign_id, filename, object_summary)
 
-            return jsonify({
-                "campaign_id": campaign_id,
-                "campaign": updated_campaign,
-                "objects": object_summary,
-                "updated": True
-            })
-        else:
-            # Create new campaign
-            print("[UPLOAD] Creating new campaign")
+                response_data = {
+                    "campaign_id": campaign_id,
+                    "campaign": updated_campaign,
+                    "objects": object_summary,
+                    "updated": True
+                }
+            else:
+                # Create new campaign
+                print("[UPLOAD] Creating new campaign")
 
-            campaign_data = generator.generate_initial_campaign(object_summary, description)
-            campaign_id = campaign_manager.create_campaign(campaign_data)
-            campaign_manager.add_image_to_campaign(campaign_id, str(filepath), object_summary)
+                campaign_data = generator.generate_initial_campaign(object_summary, description)
+                campaign_id = campaign_manager.create_campaign(campaign_data)
+                campaign_manager.add_image_to_campaign(campaign_id, filename, object_summary)
 
-            return jsonify({
-                "campaign_id": campaign_id,
-                "campaign": campaign_data,
-                "objects": object_summary,
-                "updated": False
-            })
+                response_data = {
+                    "campaign_id": campaign_id,
+                    "campaign": campaign_data,
+                    "objects": object_summary,
+                    "updated": False
+                }
+
+            # Delete the uploaded image after processing
+            # (we've already extracted the object data and stored it in the campaign JSON)
+            try:
+                if filepath.exists():
+                    filepath.unlink()
+                    print(f"[UPLOAD] Deleted temporary image: {filename}")
+            except Exception as e:
+                print(f"[UPLOAD] Warning: Could not delete image {filename}: {e}")
+
+            return jsonify(response_data)
+
+        except Exception as inner_e:
+            # Clean up image on error
+            if filepath.exists():
+                filepath.unlink()
+            raise inner_e
 
     except Exception as e:
         print(f"[ERROR] Upload failed: {e}")
@@ -160,12 +178,13 @@ def get_campaign(campaign_id):
         return jsonify({"error": str(e)}), 500
 
 
+# This file is now run via main.py
+# You can still run it directly for testing: python dnd_app.py
 if __name__ == '__main__':
-    # Ensure GROQ_API_KEY is set
     if not os.getenv("GROQ_API_KEY"):
         print("WARNING: GROQ_API_KEY not set in environment variables")
         print("Get your free API key at: https://console.groq.com/keys")
-
-    print("Starting D&D Campaign Generator...")
-    print("Make sure to set GROQ_API_KEY environment variable")
-    app.run(debug=True, host='0.0.0.0', port=5001)
+        print("\nRun via main.py instead: python main.py")
+    else:
+        print("Starting D&D Campaign Generator...")
+        app.run(debug=True, host='0.0.0.0', port=5001)

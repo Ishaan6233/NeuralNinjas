@@ -147,13 +147,14 @@ class CampaignManager:
         summaries.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
         return summaries
 
-    def add_image_to_campaign(self, campaign_id: str, image_path: str, objects: Dict[str, int]) -> bool:
+    def add_image_to_campaign(self, campaign_id: str, image_filename: str, objects: Dict[str, int]) -> bool:
         """
-        Add an image reference to a campaign.
+        Add image metadata to a campaign.
+        Note: The actual image file is deleted after processing to save space.
 
         Args:
             campaign_id: Campaign ID
-            image_path: Path to the uploaded image
+            image_filename: Name of the uploaded image (not full path, as file is deleted)
             objects: Detected objects from the image
 
         Returns:
@@ -164,7 +165,7 @@ class CampaignManager:
             return False
 
         campaign.setdefault("images", []).append({
-            "path": image_path,
+            "filename": image_filename,
             "objects": objects,
             "uploaded_at": datetime.now().isoformat()
         })
