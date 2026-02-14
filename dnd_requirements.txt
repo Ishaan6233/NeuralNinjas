@@ -1,0 +1,6 @@
+flask>=3.0.0
+ultralytics>=8.1.0
+opencv-python>=4.9.0.80
+numpy>=1.26.0
+groq>=0.4.2
+werkzeug>=3.0.1
