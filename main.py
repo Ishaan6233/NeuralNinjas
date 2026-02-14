@@ -13,8 +13,9 @@ from src.detect import detect_objects  # noqa: E402
 
 
 def main() -> int:
-    # Allow an optional CLI argument; fall back to the bundled Batman PNG.
-    image_path = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "batman_PNG13.png"
+    # Allow an optional CLI argument; fall back to the provided living room image.
+    default_image = Path(r"C:\Users\melri\OneDrive\Desktop\NeuralNinjas\living_room.jpeg")
+    image_path = Path(sys.argv[1]) if len(sys.argv) > 1 else default_image
     if not image_path.exists():
         print(f"Image not found: {image_path}")
         return 1
